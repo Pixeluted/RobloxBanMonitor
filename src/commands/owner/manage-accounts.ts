@@ -10,7 +10,7 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 import { MonitoredAccountModel } from "../../models/MonitoredAccount";
-import { RobloxAPI } from "../../RobloxAPI";
+import { BanAPI, RobloxAPI } from "../../RobloxAPI";
 import { randomUUID } from "crypto";
 
 class ManageAccountsInstance {
@@ -19,6 +19,7 @@ class ManageAccountsInstance {
 
   private currentCommandState: "BROWSING" | "MANAGING" = "BROWSING";
   private currentManagingDocument: any = null;
+  private dangerModeEnabled: boolean = false;
 
   private listOfAccounts: any[] = [];
   private accountsPerPage = 5;
@@ -192,7 +193,16 @@ class ManageAccountsInstance {
           new ButtonBuilder()
             .setCustomId("GOBACK|" + this.sessionKey)
             .setLabel("Go back")
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId("BANINFO|" + this.sessionKey)
+            .setLabel("Ban Info")
             .setStyle(ButtonStyle.Primary)
+            .setDisabled(this.currentManagingDocument.banStatus === "UNBANNED"),
+          new ButtonBuilder()
+            .setCustomId("DELETE|" + this.sessionKey)
+            .setLabel("Delete")
+            .setStyle(ButtonStyle.Danger)
         );
 
       await this.interaction.editReply({
@@ -215,6 +225,65 @@ class ManageAccountsInstance {
         if (splitData[0] === "GOBACK") {
           this.currentCommandState = "BROWSING";
           this.currentManagingDocument = null;
+        } else if (splitData[0] === "DELETE") {
+          if (!this.dangerModeEnabled) {
+            return await collectedInteraction.reply({
+              content:
+                "You need to enable danger mode in command arguments to delete accounts!",
+              ephemeral: true,
+            });
+          }
+
+          await MonitoredAccountModel.deleteOne({
+            userId: this.currentManagingDocument.userId,
+          });
+          this.listOfAccounts = this.listOfAccounts.filter(
+            (account) => account.userId !== this.currentManagingDocument.userId
+          );
+          this.currentCommandState = "BROWSING";
+          this.currentManagingDocument = null;
+        } else if (splitData[0] === "BANINFO") {
+          const banInfo = await BanAPI.isAccountBanned(
+            this.currentManagingDocument.accountCookie
+          );
+          if (banInfo === false) {
+            return await collectedInteraction.reply({
+              content: "Failed to fetch ban info!",
+              ephemeral: true,
+            });
+          } else if (banInfo === null) {
+            return await collectedInteraction.reply({
+              content: "Account is not bannned!",
+              ephemeral: true,
+            });
+          }
+
+          const banInfoEmbed = new EmbedBuilder()
+            .setTitle(`${this.currentManagingDocument.username} Ban Info!`)
+            .addFields([
+              {
+                name: "Ban Reason",
+                value: banInfo.banType,
+              },
+              {
+                name: "Ban Start",
+                value: `<t:${banInfo.banStartUnix}:f>`,
+              },
+              {
+                name: "Ban End",
+                value: `<t:${banInfo.banEndUnix}:f>`,
+              },
+            ])
+            .setTimestamp()
+            .setColor("White")
+            .setFooter({
+              text: "Developed by Pixeluted with ❤️",
+            });
+
+          return await collectedInteraction.reply({
+            embeds: [banInfoEmbed],
+            ephemeral: true,
+          });
         }
 
         interactionCollector.stop();
@@ -240,6 +309,14 @@ class ManageAccountsInstance {
       return await this.interaction.editReply({
         content: "You do not have permission to use this command!",
       });
+    }
+
+    const dangerModeEnabled = this.interaction.options.getBoolean(
+      "danger-mode",
+      false
+    );
+    if (dangerModeEnabled !== null) {
+      this.dangerModeEnabled = dangerModeEnabled;
     }
 
     const allMonitoredAccounts = await MonitoredAccountModel.where();
@@ -273,7 +350,15 @@ class ManageAccountsInstance {
 export default {
   data: new SlashCommandBuilder()
     .setName("manage-accounts")
-    .setDescription("Lists all monitored accounts and lets you manage them!"),
+    .setDescription("Lists all monitored accounts and lets you manage them!")
+    .addBooleanOption((option) =>
+      option
+        .setName("danger-mode")
+        .setDescription(
+          "Allows accounts to be deleted while using this command"
+        )
+        .setRequired(false)
+    ),
   async execute(
     interaction: ChatInputCommandInteraction<"cached">,
     client: Client
