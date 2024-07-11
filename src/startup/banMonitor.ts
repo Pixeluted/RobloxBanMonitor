@@ -50,7 +50,7 @@ async function doBanCheck(client: Client) {
     if (currentBanStatus === "BANNED" && accountBanStatus) {
       if (
         Math.floor(Date.now() / 1000) > accountBanStatus.banEndUnix &&
-        Math.floor(Date.now() / 1000) < accountBanStatus.banStartUnix + 60
+        Math.floor(Date.now() / 1000) < accountBanStatus.banEndUnix + 70
       ) {
         sendAccountCanBeReactivated(
           monitoredAccount.userId,
