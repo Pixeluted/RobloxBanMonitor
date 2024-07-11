@@ -6,7 +6,13 @@ Open-sourced ban monitor as discord bot. What are it's features?
 2. Notifies you whenever account got banned/unbanned or that it can be re-activated
 3. Notifies you whenever account authorization got invalid so you can update it
 
-### Screenshots
+### Screenshots/Videos
+
+https://github.com/Pixeluted/RobloxBanMonitor/assets/78791776/36f6d6e3-33c0-4d48-9a5c-93b235cabf9b
+
+![raw](https://github.com/Pixeluted/RobloxBanMonitor/assets/78791776/62fd2371-3e09-486a-ae0b-f7bf678b2e29)
+
+
 
 ### How to set it up?
 
