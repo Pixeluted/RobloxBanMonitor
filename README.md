@@ -35,11 +35,13 @@ BOT_OWNER_USER_ID=
 DATABASE_URL="URL"
 ```
 
-BOT_TOKEN is the token of the bot u want to host it\n
-BOT_OWNER_USER_ID must be user id of user that can add/manage accounts\n
-DATABASE_URL is the one you either get from atlas or your self hosted instance\n
+BOT_TOKEN is the token of the bot u want to host it
 
-Once these everything is done, you can launch the bot by doing
+BOT_OWNER_USER_ID must be user id of user that can add/manage accounts
+
+DATABASE_URL is the one you either get from atlas or your self hosted instance
+
+Once everything is done, you can launch the bot by doing
 
 ```
 npm run start
