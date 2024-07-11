@@ -3,7 +3,10 @@ import { Client } from "discord.js";
 import cron from "node-cron";
 import { MonitoredAccountModel } from "../models/MonitoredAccount";
 import { BanAPI } from "../RobloxAPI";
-import { sendBanStatusUpdate } from "../Notifications";
+import {
+  sendAccountCanBeReactivated,
+  sendBanStatusUpdate,
+} from "../Notifications";
 
 let isCheckingBans = false;
 
@@ -42,6 +45,18 @@ async function doBanCheck(client: Client) {
         },
         { banStatus: currentBanStatus }
       );
+    }
+
+    if (currentBanStatus === "BANNED" && accountBanStatus) {
+      if (
+        Math.floor(Date.now() / 1000) > accountBanStatus.banEndUnix &&
+        Math.floor(Date.now() / 1000) < accountBanStatus.banStartUnix + 60
+      ) {
+        sendAccountCanBeReactivated(
+          monitoredAccount.userId,
+          monitoredAccount.addedBy
+        );
+      }
     }
   }
 
