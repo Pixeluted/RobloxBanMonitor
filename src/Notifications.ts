@@ -1,7 +1,30 @@
-import { Client, EmbedBuilder, TextChannel } from "discord.js";
+import {
+  Client,
+  EmbedBuilder,
+  MessageCreateOptions,
+  TextChannel,
+} from "discord.js";
 import { NotificationChannelModel } from "./models/NotificationChannel";
 import { BanInformation, RobloxAPI } from "./RobloxAPI";
 import { client } from ".";
+
+async function sendContentToChannels(content: MessageCreateOptions) {
+  const allNotificationChannels = await NotificationChannelModel.where();
+
+  for (const notificationChannelData of allNotificationChannels) {
+    try {
+      const notificationChannelGuild = await client.guilds.fetch(
+        notificationChannelData.guildId
+      );
+      const notificationChannel =
+        (await notificationChannelGuild.channels.fetch(
+          notificationChannelData.channelId
+        )) as TextChannel;
+
+      notificationChannel.send(content);
+    } catch {}
+  }
+}
 
 export async function sendBanStatusUpdate(
   UpdateType: "BANNED" | "UNBANNED",
@@ -50,44 +73,25 @@ export async function sendBanStatusUpdate(
       .setFooter({ text: "Developed by Pixeluted with ❤️" });
   }
 
-  const allNotificationChannels = await NotificationChannelModel.where();
+  await sendContentToChannels({
+    embeds: [notificationEmbed as EmbedBuilder],
+  });
+}
 
-  for (const notificationChannelData of allNotificationChannels) {
-    try {
-      const notificationChannelGuild = await client.guilds.fetch(
-        notificationChannelData.guildId
-      );
-      const notificationChannel =
-        (await notificationChannelGuild.channels.fetch(
-          notificationChannelData.channelId
-        )) as TextChannel;
-
-      notificationChannel.send({
-        content: "@everyone",
-        embeds: [notificationEmbed as EmbedBuilder],
-      });
-    } catch {}
-  }
+export async function sendAccountCanBeReactivated(
+  userId: number,
+  addedById: string
+) {
+  await sendContentToChannels({
+    content: `<@${addedById}> Account with the UserID ${userId} can be now re-activated!`,
+  });
 }
 
 export async function sendCookieInvalidUpdate(
   userId: number,
   addedById: string
 ) {
-  const allNotificationChannels = await NotificationChannelModel.where();
-  for (const notificationChannelData of allNotificationChannels) {
-    try {
-      const notificationChannelGuild = await client.guilds.fetch(
-        notificationChannelData.guildId
-      );
-      const notificationChannel =
-        (await notificationChannelGuild.channels.fetch(
-          notificationChannelData.channelId
-        )) as TextChannel;
-
-      notificationChannel.send({
-        content: `<@${addedById}> Account with the UserID ${userId} has expired cookie! Please update it by using /add-account!\nAccount Link: https://roblox.com/users/${userId}`,
-      });
-    } catch {}
-  }
+  await sendContentToChannels({
+    content: `<@${addedById}> Account with the UserID ${userId} has expired cookie! Please update it by using /add-account!\nAccount Link: https://roblox.com/users/${userId}`,
+  });
 }
