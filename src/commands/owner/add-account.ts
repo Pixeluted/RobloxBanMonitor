@@ -37,7 +37,7 @@ export default {
 
     if (!isValidCookie) {
       return await interaction.editReply({
-        content: "The cookie your provided is invalid!",
+        content: "The cookie you provided is invalid!",
       });
     }
 
